@@ -1,0 +1,48 @@
+#!/bin/sh
+set -e
+TEST_HOST="${TEST_HOST:-localhost}"
+
+get_exposed_port() {
+  docker compose port "${1}" "${2}" | cut -d: -f2
+}
+
+report_start() {
+  printf "Waiting for %s ... " "${1}"
+}
+
+report_done() {
+  printf "\033[0;32mdone\033[0m\n"
+}
+
+if test -n "$CI_DEBUG_TRACE" -o -n "$SHELLDEBUG"
+then
+  set -x
+fi
+
+# Activate the virtual environment
+if test -e env/bin/activate
+then
+  . ./env/bin/activate
+fi
+
+mkdir -p build
+
+if test -d .git
+then
+  pre-commit install --install-hooks
+fi
+
+# Stop any running instances and clean up after them, then pull images
+docker compose down --volumes --remove-orphans
+docker compose up -d --quiet-pull --wait
+
+cat > .env <<EOF
+export CORS_ORGIN=http://localhost:5173
+export DEBUG=1
+export ENVIRONMENT=development
+export LOGFIRE_CONSOLE=false
+export LOGFILE_TOKEN=
+export POSTGRES_URL=postgresql://postgres:password@${TEST_HOST}:$(get_exposed_port postgres 5432)/emuse
+EOF
+
+printf "\nBootstrap complete\n"

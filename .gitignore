@@ -1,0 +1,7 @@
+.*
+!/.github
+!/.gitignore
+!/.junie
+!/.pre-commit-config.yaml
+build
+env
