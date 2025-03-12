@@ -1,15 +1,18 @@
 import contextlib
 import logging
-import typing
+from collections import abc
 
 import psycopg
 import psycopg_pool
+import pydantic
 import yarl
 from psycopg import rows
 
 from emuse import config
 
 LOGGER = logging.getLogger(__name__)
+
+ModelType = type[pydantic.BaseModel]
 
 _url = yarl.URL(config.env_vars['postgres_url'])
 _pool = psycopg_pool.AsyncConnectionPool(str(_url),
@@ -37,12 +40,12 @@ async def close_pool() -> None:
 
 
 @contextlib.asynccontextmanager
-async def cursor(row_factory_class: typing.Generic | None =None) \
-        -> typing.AsyncContextManager[psycopg.AsyncCursor]:
+async def cursor(row_factory_class: ModelType | None = None) \
+        -> abc.AsyncGenerator[psycopg.AsyncCursor]:
     """Get a cursor for Postgres."""
     kwargs = {}
     if row_factory_class:
-        kwargs["row_factory"] = rows.class_row(row_factory_class)
+        kwargs['row_factory'] = rows.class_row(row_factory_class)
     async with _pool.connection() as conn:
         async with conn.cursor(**kwargs) as value:
             yield value
