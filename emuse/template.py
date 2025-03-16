@@ -2,15 +2,23 @@ import pathlib
 
 import jinja2
 
-from emuse import config
+from emuse import common
 
+STATIC_PATH = pathlib.Path(__file__).parent / 'static'
 TEMPLATE_PATH = pathlib.Path(__file__).parent / 'templates'
 
-_environment = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(TEMPLATE_PATH),
-    autoescape=True,
-    auto_reload=config.env_vars.get('debug', False) == '1',
-    undefined=jinja2.StrictUndefined)
+_environment: jinja2.Environment | None = None
+
+
+def initialize() -> None:
+    global _environment
+    settings = common.Settings()
+    _environment = jinja2.Environment(
+        loader=jinja2.FileSystemLoader(TEMPLATE_PATH),
+        autoescape=True,
+        auto_reload=settings.debug,
+        extensions=['jinja2.ext.i18n', 'jinja2_time.TimeExtension'],
+        undefined=jinja2.StrictUndefined)
 
 
 def render(template: str, **kwargs) -> str:

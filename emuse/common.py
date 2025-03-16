@@ -1,3 +1,4 @@
+import datetime
 import logging
 import pathlib
 import uuid
@@ -6,12 +7,19 @@ from logging import config as logging_config
 import fastapi
 import logfire
 import psycopg
+import pydantic_settings
 import uuid_utils
 import yaml
 
-from emuse import config
 
-ENVIRONMENT = config.env_vars.get('ENVIRONMENT', 'development')
+class Settings(pydantic_settings.BaseSettings):
+    model_config = {'case_sensitive': False}
+
+    debug: bool = False
+    environment: str = 'development'
+    cors_origin: str = '*'
+    logfire_token: str | None = None
+    sentry_dsn: str | None = None
 
 
 class StatusEndpointFilter(logging.Filter):
@@ -23,9 +31,10 @@ class StatusEndpointFilter(logging.Filter):
 
 
 def configure_logfire(app: fastapi.FastAPI) -> None:  # pragma: nocover
-    if config.env_vars.get('logfire_token'):
-        logfire.configure(token=config.env_vars.get('logfire_token'),
-                          environment=ENVIRONMENT,
+    settings = Settings()
+    if settings.logfire_token:
+        logfire.configure(token=settings.logfire_token,
+                          environment=settings.environment,
                           service_name='eMuse')
         logfire.instrument_fastapi(app,
                                    capture_headers=True,
@@ -49,6 +58,16 @@ def log_config(verbose: bool = False) -> dict:
 def configure_logging(verbose: bool = False) -> None:  # pragma: nocover
     """Configure logging for the application."""
     logging_config.dictConfig(log_config(verbose))
+
+
+def current_date() -> datetime.date:
+    """Return the current date in UTC"""
+    return current_timestamp().date()
+
+
+def current_timestamp() -> datetime.datetime:
+    """Return the current timestamp in UTC"""
+    return datetime.datetime.now(datetime.UTC)
 
 
 def new_uuid7() -> uuid.UUID:

@@ -3,9 +3,9 @@
 fastapi dev emuse/dev.py
 
 """
-from emuse import common, config
-from emuse.main import create_app
+from emuse import common, main
 
-app = create_app()
+app = main.create_app()
+settings = common.Settings()
 common.configure_logfire(app)
-common.configure_logging(config.env_vars.get('debug', False) == '1')
+common.configure_logging(settings.debug)
