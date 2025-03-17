@@ -38,6 +38,8 @@ def create_app() -> fastapi.FastAPI:
         allow_headers=['*'],
         expose_headers=['Content-Range'])
     app.include_router(endpoints.index_router)
+    app.include_router(endpoints.login_router)
+    app.include_router(endpoints.logout_router)
     app.mount('/static',
               staticfiles.StaticFiles(directory=BASE_PATH / 'static'),
               name='static')

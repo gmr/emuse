@@ -17,6 +17,7 @@ CREATE TABLE v1.accounts (
     display_name   TEXT NOT NULL,
     email          TEXT NOT NULL,
     password       TEXT NOT NULL,
+    salt           BYTEA NOT NULL,
     date_of_birth  DATE,
     locale         TEXT NOT NULL DEFAULT 'en_US',
     timezone       TEXT NOT NULL DEFAULT 'UTC',

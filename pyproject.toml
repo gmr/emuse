@@ -19,6 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "fastapi[standard]",
+    "fastapi-sessions",
     "google-auth",
     "httpx",
     "jinja2",
@@ -124,6 +125,7 @@ select = [
 ]
 ignore = [
   "RSE",      # contradicts Python Style Guide
+  "B008",     # FastAPI likes such things
 ]
 flake8-quotes = { inline-quotes = "single" }
 
