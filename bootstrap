@@ -6,24 +6,13 @@ get_exposed_port() {
   docker compose port "${1}" "${2}" | cut -d: -f2
 }
 
-report_start() {
-  printf "Waiting for %s ... " "${1}"
-}
-
-report_done() {
-  printf "\033[0;32mdone\033[0m\n"
-}
-
-if test -n "$CI_DEBUG_TRACE" -o -n "$SHELLDEBUG"
-then
-  set -x
-fi
-
 # Activate the virtual environment
-if test -e env/bin/activate
+if test -e .venv/bin/activate
 then
-  . ./env/bin/activate
+  . ./.venv/bin/activate
 fi
+
+pip install -e '.[dev]'
 
 mkdir -p build
 
@@ -40,8 +29,6 @@ cat > .env <<EOF
 export CORS_ORGIN=http://localhost:5173
 export DEBUG=1
 export ENVIRONMENT=development
-export LOGFIRE_CONSOLE=false
-export LOGFILE_TOKEN=
 export POSTGRES_URL=postgresql://postgres:password@${TEST_HOST}:$(get_exposed_port postgres 5432)/emuse
 EOF
 

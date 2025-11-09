@@ -1,0 +1,63 @@
+version = 1
+disable_existing_loggers = true
+
+[formatters.default]
+"()" = "logging.Formatter"
+fmt = "%(asctime)s - %(name)20s - %(levelname)7s - %(message)s"
+
+[handlers.default]
+"()" = "logging.StreamHandler"
+level = "INFO"
+formatter = "default"
+stream = "ext://sys.stdout"
+filters = []
+
+[loggers.emuse]
+handlers = ["default"]
+level = "DEBUG"
+propagate = true
+
+[loggers.fastapi]
+handlers = ["default"]
+level = "INFO"
+propagate = true
+
+[loggers.httpcore]
+handlers = ["default"]
+level = "ERROR"
+propagate = true
+
+[loggers.httpx]
+handlers = ["default"]
+level = "ERROR"
+propagate = true
+
+[loggers.pydantic]
+handlers = ["default"]
+level = "INFO"
+propagate = true
+
+[loggers."urllib3.connectionpool"]
+handlers = ["default"]
+level = "WARNING"
+propagate = true
+
+[loggers.uvicorn]
+handlers = ["default"]
+level = "INFO"
+propagate = false
+
+[loggers."uvicorn.access"]
+handlers = ["default"]
+level = "INFO"
+propagate = false
+
+[loggers."uvicorn.error"]
+handlers = ["default"]
+level = "ERROR"
+propagate = false
+
+[loggers."uvicorn.asgi"]
+handlers = ["default"]
+level = "INFO"
+propagate = false

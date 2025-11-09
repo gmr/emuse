@@ -24,13 +24,11 @@ dependencies = [
     "httpx",
     "jinja2",
     "jinja2_time",
-    "logfire[fastapi,httpx,psycopg]",
     "psycopg[pool]",
     "pydantic[email,timezone]",
     "pydantic_extra_types",
     "pydantic_settings",
     "python-ulid",
-    "pyyaml",
     "tzdata",
     "uuid-utils",
     "uvicorn",
@@ -39,96 +37,93 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "build",
-    "coverage",
-    "ruff"
+  "build",
+  "coverage",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "ruff"
 ]
 
 [project.scripts]
 emuse = "emuse.main:main"
 
-[tool.coverage.run]
-branch = true
-source = ["emuse"]
-command_line = "-m unittest discover tests --buffer --verbose"
+[tool.coverage.html]
+directory = "build/coverage"
 
 [tool.coverage.report]
-exclude_also = [
-  "typing.TYPE_CHECKING"
-]
-omit = [
-  "emuse/dev.py"
-]
 fail_under = 90
 show_missing = true
 
-[tool.coverage.html]
-directory = "build/coverage"
+[tool.coverage.run]
+branch = true
+source = ["src/emuse"]
+command_line = "-m pytest"
 
 [tool.coverage.xml]
 output = "build/reports/coverage.xml"
 
 [tool.hatch.build]
 artifacts = [
-    "/emuse/log-config.yaml",
-    "/emuse/static/*",
-    "/emuse/templates/*"
+    "/VERSION",
 ]
 
 [tool.hatch.build.targets.wheel]
-include = [
-    "emuse",
-    "emuse.endpoints",
-    "emuse.models"
-]
-
-[tool.hatch.env.default]
-python = "python3.12"
-features = ["testing"]
+src-layout = true
 
 [tool.hatch.version]
-path = "emuse/__version__.py"
+path = "VERSION"
+pattern = "(?P<version>.*)"
 
-[tool.logfire]
-project_name = "emuse"
-service_name = "emuse"
-dynamic = ["version"]
-ignore_no_config = true
-console_colors = "never"
-console = false
+[tool.hatch.envs.default]
+python = "python3.12"
+features = ["dev"]
 
-[tool.logfire.code_source]
-repository = "https://github.com/gmr/emuse"
+[tool.mkdocs]
+config-file = "mkdocs.yml"
 
 [tool.ruff]
 line-length = 79
 target-version = "py312"
 
+[tool.ruff.format]
+preview = true
+quote-style = "single"
+docstring-code-format = true
+docstring-code-line-length = 40
+skip-magic-trailing-comma = true
+
 [tool.ruff.lint]
+preview = true
+dummy-variable-rgx = "^_$"
 select = [
-    "ASYNC",  # flake8-async
-    "B",      # flake8-bugbear
-    "BLE",    # flake8-blind-except
-    "C4",     # flake8-comprehensions
-    "DTZ",    # flake8-datetimez
-    "E", "W", # pycodestyle
-    "F",      # pyflakes
-    "G",      # flake8-logging-format
-    "I",      # isort
-    "S",      # flake8-bandit
-    "T20",    # flake8-print
-    "UP",     # pyupgrade
-    "F401",   # unused imports
-    "F841",   # unused variables
-    "B027",   # empty method in abstract base class
-    "B905",   # zip() without explicit strict parameter
+    "BLE",      # flake8-blind-except
+    "C4",       # flake8-comprehensions
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "G",        # flake8-logging-format
+    "I",        # isort
+    "N",        # pep8-naming
+    "Q",        # flake8-quotes
+    "S",        # flake8-bandit
+    "ASYNC",    # flake8-async
+    "B",        # flake8-bugbear
+    "DTZ",      # flake8-datetimez
+    "FURB",     # refurb
+    "RUF",      # ruff-specific
+    "T20",      # flake8-print
+    "UP",       # pyupgrade
 ]
 ignore = [
-  "RSE",      # contradicts Python Style Guide
-  "B008",     # FastAPI likes such things
+    "B008",     # FastAPI's Depends() pattern in function defaults is intentional
+    "N818",     # exception class names are not required to end in Error
+    "RSE",      # contradicts Python Style Guide
+    "UP040",    # allow non-pep695-type-alias
 ]
 flake8-quotes = { inline-quotes = "single" }
 
-[tool.yapf]
-allow_split_before_dict_value = false
-indent_dictionary_value = true
+[tool.ruff.lint.isort]
+split-on-trailing-comma=false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S"]
