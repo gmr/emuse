@@ -34,7 +34,7 @@ source .env
 Key environment variables:
 - `POSTGRES_URL`: Database connection string
 - `DEBUG`: Enable debug mode (1 for development)
-- `CORS_ORIGIN`: Allowed CORS origin (default: http://localhost:5173)
+- `CORS_ORIGIN`: Allowed CORS origin (default: `http://localhost:5173`)
 - `COOKIE_SECRET`: Session cookie secret
 
 ## Backend (Python/FastAPI)
@@ -48,7 +48,7 @@ python -m emuse.main --verbose
 emuse --verbose
 ```
 
-The backend runs on `http://0.0.0.0:8000`
+The backend runs on <http://0.0.0.0:8000>
 
 ### Testing
 ```bash
@@ -76,7 +76,7 @@ The backend runs on `http://0.0.0.0:8000`
 
 Code style:
 - Line length: 79 characters
-- Formatter: yapf
+- Formatter: ruff
 - Linter: ruff (extensive ruleset including flake8-async, bugbear, bandit, etc.)
 - Single quotes for inline strings
 
@@ -186,11 +186,15 @@ The `compose.yml` defines:
 ## Pre-commit Hooks
 
 Configured in `.pre-commit-config.yaml`:
-- Shell script checks
-- TOML/YAML validation
+- Python AST validation
+- Shebang script executability check
+- TOML validation
+- YAML validation
 - Debug statement detection
 - End-of-file fixing
-- yapf formatting
+- Mixed line ending normalization
+- Trailing whitespace trimming
+- ruff formatting
 - ruff linting with auto-fix
 
 Hooks are installed automatically by the bootstrap script.
@@ -212,7 +216,7 @@ Hooks are installed automatically by the bootstrap script.
 ### Testing & Quality
 - Test framework: pytest
 - Coverage requirement: ≥90% (configured in pyproject.toml)
-- Pre-commit hooks run automatically (ruff, yapf, etc.)
+- Pre-commit hooks run automatically (ruff for linting and formatting)
 
 ### Database
 - Schema namespace: All tables in `v1` schema
