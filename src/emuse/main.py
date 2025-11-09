@@ -17,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 @contextlib.asynccontextmanager
 async def fastapi_lifespan(*_args, **_kwargs):  # pragma: nocover
     """This is invoked by FastAPI for us to control startup and shutdown."""
-    LOGGER.info('emuse v%s Starting Up', __version__.version)
+    LOGGER.info('emuse v%s', __version__)
     template.initialize()
     async with database.lifespan() as pool:
         yield {'postgres': pool}
@@ -28,12 +28,10 @@ def create_app() -> fastapi.FastAPI:
     """Wrap the top-level mess in a function as much as possible"""
     settings = common.Settings()
     app = fastapi.FastAPI(
-        title='eMuse.org',
-        lifespan=fastapi_lifespan,
-        version=__version__.version,
+        title='eMuse.org', lifespan=fastapi_lifespan, version=__version__
     )
     app.add_middleware(
-        cors.CORSMiddleware,  # type: ignore[call-arg]
+        cors.CORSMiddleware,
         allow_origins=[settings.cors_origin],
         allow_credentials=True,
         allow_methods=['*'],

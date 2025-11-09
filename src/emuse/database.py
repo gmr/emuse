@@ -32,8 +32,7 @@ class _Settings(pydantic_settings.BaseSettings):
 
 @contextlib.asynccontextmanager
 async def lifespan() -> abc.AsyncIterator[psycopg_pool.AsyncConnectionPool]:
-    settings = _Settings()  # type: ignore[call-arg]
-    LOGGER.debug('Connecting to Postgres: %s', settings.url.unicode_string())
+    settings = _Settings()
     async with psycopg_pool.AsyncConnectionPool(
         settings.url.unicode_string(),
         min_size=settings.min_size,

@@ -4,7 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import '@awesome.me/webawesome/dist/components/card/card.js'
 import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/button/button.js'
-import '@awesome.me/webawesome/dist/components/alert/alert.js'
+import '@awesome.me/webawesome/dist/components/callout/callout.js'
 import '@awesome.me/webawesome/dist/components/icon/icon.js'
 
 interface LoginRequest {
@@ -88,10 +88,10 @@ export default function Login() {
           </wa-button>
 
           {mutation.isError && (
-            <wa-alert variant="danger" open>
+            <wa-callout variant="danger" open>
               <wa-icon slot="icon" name="exclamation-triangle" />
               Login failed. Please check your credentials and try again.
-            </wa-alert>
+            </wa-callout>
           )}
         </form>
 

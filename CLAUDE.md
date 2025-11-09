@@ -86,7 +86,7 @@ Code style:
 The project uses a **src-layout** structure:
 - Backend: `src/emuse/` (Python package)
 - Frontend: `src/ui/` (React/TypeScript)
-- Version: `/VERSION` file (single source of truth)
+- Version: `src/emuse/__version__.py` (single source of truth)
 - Logging config: `src/emuse/logconfig.toml`
 
 #### Database Layer (`src/emuse/database.py`)
@@ -201,7 +201,7 @@ Hooks are installed automatically by the bootstrap script.
 - **Src-layout structure**: All source code is under `src/` directory
 - Backend package: `src/emuse/`
 - Frontend app: `src/ui/`
-- Version management: Single `/VERSION` file at project root
+- Version management: `src/emuse/__version__.py`
 
 ### Security & Authentication
 - Password hashing: PBKDF2-SHA256 with 100k iterations and per-user salts

@@ -64,16 +64,12 @@ command_line = "-m pytest"
 output = "build/reports/coverage.xml"
 
 [tool.hatch.build]
-artifacts = [
-    "/VERSION",
-]
 
 [tool.hatch.build.targets.wheel]
 src-layout = true
 
 [tool.hatch.version]
-path = "VERSION"
-pattern = "(?P<version>.*)"
+path = "src/emuse/__version__.py"
 
 [tool.hatch.envs.default]
 python = "python3.12"
