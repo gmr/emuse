@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "emuse"
 dynamic = ["version"]
-description = "Sourcee for emuse.org"
+description = "Source for emuse.org"
 authors = [{ name = "Gavin M. Roy", email = "gavinmroy@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.12"
