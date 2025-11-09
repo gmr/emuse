@@ -10,7 +10,12 @@ import uuid_utils
 
 
 class Settings(pydantic_settings.BaseSettings):
-    model_config = {'case_sensitive': False}
+    model_config = {
+        'case_sensitive': False,
+        'env_file': '.env',
+        'env_prefix': '',
+        'extra': 'ignore',
+    }
 
     debug: bool = False
     environment: str = 'development'

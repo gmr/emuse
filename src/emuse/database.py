@@ -22,12 +22,18 @@ class _Settings(pydantic_settings.BaseSettings):
     url: pydantic.PostgresDsn = 'postgres://localhost/emuse'
     max_size: int = 10
     min_size: int = 2
-    model_config = {'env_prefix': '_postgres', 'case_sensitive': False}
+    model_config = {
+        'case_sensitive': False,
+        'env_file': '.env',
+        'env_prefix': 'postgres_',
+        'extra': 'ignore',
+    }
 
 
 @contextlib.asynccontextmanager
 async def lifespan() -> abc.AsyncIterator[psycopg_pool.AsyncConnectionPool]:
     settings = _Settings()  # type: ignore[call-arg]
+    LOGGER.debug('Connecting to Postgres: %s', settings.url.unicode_string())
     async with psycopg_pool.AsyncConnectionPool(
         settings.url.unicode_string(),
         min_size=settings.min_size,
