@@ -51,11 +51,13 @@ def create_app() -> fastapi.FastAPI:
 
 def main():
     settings = common.Settings()
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='eMuse')
     parser.add_argument(
         '--verbose', action='store_true', default=settings.debug
     )
-    parser.add_argument('--version')
+    parser.add_argument(
+        '--version', action='version', version=f'%(prog)s {__version__}'
+    )
     args = parser.parse_args()
     app = create_app()
     try:
@@ -66,7 +68,7 @@ def main():
             forwarded_allow_ips='10.0.0.0/8',
             log_config=common.log_config(args.verbose),
             proxy_headers=True,
-            headers=[('Server', f'emuse/{__version__.version}')],
+            headers=[('Server', f'emuse/{__version__}')],
             date_header=True,
             server_header=False,
             ws='none',
