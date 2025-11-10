@@ -22,7 +22,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (email: string, password: string, turnstileToken: string) => Promise<void>
   logout: () => Promise<void>
   checkSession: () => Promise<void>
 }
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [sessionData])
 
   const loginMutation = useMutation({
-    mutationFn: async (credentials: { email: string; password: string }) => {
+    mutationFn: async (credentials: { email: string; password: string; turnstile_token: string }) => {
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   })
 
-  const login = async (email: string, password: string) => {
-    await loginMutation.mutateAsync({ email, password })
+  const login = async (email: string, password: string, turnstileToken: string) => {
+    await loginMutation.mutateAsync({ email, password, turnstile_token: turnstileToken })
   }
 
   const logout = async () => {

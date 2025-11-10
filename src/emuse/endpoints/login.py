@@ -5,7 +5,7 @@ import fastapi
 import pydantic
 from fastapi import responses
 
-from emuse import database, models, session
+from emuse import database, models, session, turnstile
 
 router = fastapi.APIRouter()
 
@@ -13,6 +13,9 @@ router = fastapi.APIRouter()
 class Credentials(pydantic.BaseModel):
     email: pydantic.EmailStr
     password: pydantic.SecretStr
+    turnstile_token: str = pydantic.Field(
+        min_length=1, description='CloudFlare Turnstile verification token'
+    )
 
 
 class PublicAccount(pydantic.BaseModel):
@@ -39,7 +42,18 @@ async def login(
     credentials: Credentials,
     postgres: database.InjectConnection,
     response: responses.Response,
+    fastapi_request: fastapi.Request,
 ) -> PublicAccount:
+    # Verify Turnstile token before attempting authentication
+    client_ip = fastapi_request.client.host if fastapi_request.client else None
+    if not await turnstile.verify_token(
+        credentials.turnstile_token, client_ip
+    ):
+        raise fastapi.HTTPException(
+            status_code=400,
+            detail='CAPTCHA verification failed. Please try again.',
+        )
+
     result = await models.Account.authenticate(
         postgres, credentials.email, credentials.password.get_secret_value()
     )
