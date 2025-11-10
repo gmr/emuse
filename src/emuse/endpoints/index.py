@@ -5,19 +5,18 @@ from emuse import common, database, template
 router = fastapi.APIRouter()
 
 
-async def _render_index(postgres: database.InjectConnection) -> str:
+async def _render_index(_postgres: database.InjectConnection) -> str:
     """Render the index HTML template."""
+    # Leave the _postgres connection as we're going to use it for real data
+    # at some point in the development process when we add things to the
+    # homepage
     settings = common.Settings()
-    async with database.cursor(postgres) as cursor:
-        await cursor.execute('SELECT * FROM v1.accounts')
-        accounts = await cursor.fetchall()
-        return await template.render_async(
-            'index.html.j2',
-            title='Home',
-            accounts=accounts,
-            debug=settings.debug,
-            vite_dev_url=settings.vite_dev_url,
-        )
+    return await template.render_async(
+        'index.html.j2',
+        title='Home',
+        debug=settings.debug,
+        vite_dev_url=settings.vite_dev_url,
+    )
 
 
 @router.get('/')
