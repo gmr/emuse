@@ -14,6 +14,7 @@ declare global {
       render: (element: string | HTMLElement, options: {
         sitekey: string
         callback?: (token: string) => void
+        size?: 'normal' | 'compact' | 'flexible'
       }) => string
       getResponse: (widgetId: string) => string
       reset: (widgetId: string) => void
@@ -115,6 +116,7 @@ export default function Signup() {
         if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
           turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
             sitekey: turnstileSiteKey,
+            size: 'flexible',
           })
         }
       }
@@ -123,6 +125,7 @@ export default function Signup() {
       // Script already loaded, render widget immediately
       turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
         sitekey: turnstileSiteKey,
+        size: 'flexible',
       })
     }
   }, [turnstileSiteKey])
