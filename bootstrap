@@ -9,7 +9,7 @@ get_exposed_port() {
 # Activate the virtual environment
 if test -e .venv/bin/activate
 then
-  . ./.venv/bin/activate
+  . .venv/bin/activate
 fi
 
 pip install -e '.[dev]'

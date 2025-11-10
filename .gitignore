@@ -6,3 +6,4 @@
 build
 env
 dev-config.yaml
+.env
