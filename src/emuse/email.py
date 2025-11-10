@@ -9,7 +9,7 @@ import aiosmtplib
 import pydantic
 import pydantic_settings
 
-from emuse import common, database
+from emuse import common, database, template
 
 LOGGER = logging.getLogger(__name__)
 
@@ -69,62 +69,18 @@ async def send_verification_email(
     message['From'] = f'{settings.from_name} <{settings.from_address}>'
     message['To'] = str(email)
 
-    # Plain text version
-    text_content = f"""
-Hello {first_name},
+    # Render email templates
+    template_context = {
+        'first_name': first_name,
+        'verification_url': verification_url,
+    }
 
-Thank you for signing up for eMuse! Please verify your email address
-by clicking the link below:
-
-{verification_url}
-
-This link will expire in 24 hours.
-
-If you did not create an account, please ignore this email.
-
-Best regards,
-The eMuse Team
-"""
-
-    # HTML version
-    html_content = f"""
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-</head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; \
-color: #333;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #2c3e50;">Welcome to eMuse!</h2>
-        <p>Hello {first_name},</p>
-        <p>Thank you for signing up for eMuse! Please verify your
-        email address by clicking the button below:</p>
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="{verification_url}"
-               style="background-color: #3498db; color: white; \
-padding: 12px 30px;
-                      text-decoration: none; border-radius: 5px; \
-display: inline-block;">
-                Verify Email Address
-            </a>
-        </div>
-        <p style="color: #7f8c8d; font-size: 14px;">
-            This link will expire in 24 hours.
-        </p>
-        <p style="color: #7f8c8d; font-size: 14px;">
-            If you did not create an account, please ignore this email.
-        </p>
-        <hr style="border: none; border-top: 1px solid #ecf0f1; \
-margin: 30px 0;">
-        <p style="color: #95a5a6; font-size: 12px;">
-            Best regards,<br>
-            The eMuse Team
-        </p>
-    </div>
-</body>
-</html>
-"""
+    text_content = await template.render_async(
+        'email/verify.txt.j2', **template_context
+    )
+    html_content = await template.render_async(
+        'email/verify.html.j2', **template_context
+    )
 
     message.attach(MIMEText(text_content, 'plain'))
     message.attach(MIMEText(html_content, 'html'))
