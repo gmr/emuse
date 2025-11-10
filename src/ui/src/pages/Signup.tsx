@@ -159,6 +159,12 @@ export default function Signup() {
     onSuccess: () => {
       navigate('/signup/success')
     },
+    onError: () => {
+      // Reset Turnstile widget so user can retry
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
+    },
   })
 
   const validateEmail = (email: string): string | undefined => {
@@ -170,7 +176,11 @@ export default function Signup() {
 
   const validatePassword = (password: string): string | undefined => {
     if (!password) return 'Password is required'
-    if (password.length < 8) return 'Password must be at least 8 characters'
+    if (password.length < 12) return 'Password must be at least 12 characters'
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter'
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter'
+    if (!/[0-9]/.test(password)) return 'Password must contain at least one number'
+    if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain at least one special character'
     return undefined
   }
 
@@ -313,7 +323,7 @@ export default function Signup() {
                 style={inputStyle}
               />
             </label>
-            <div style={helpTextStyle}>Minimum 8 characters</div>
+            <div style={helpTextStyle}>Minimum 12 characters with uppercase, lowercase, number, and special character</div>
             {errors.password && (
               <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
                 {errors.password}

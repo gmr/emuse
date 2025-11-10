@@ -96,6 +96,10 @@ export default function Login() {
       navigate('/')
     } catch {
       setError('Login failed. Please check your credentials and try again.')
+      // Reset Turnstile widget so user can retry
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
     }
   }
 

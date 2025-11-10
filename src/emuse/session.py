@@ -73,7 +73,7 @@ class Session:
         self.backend = backends.InMemoryBackend[uuid.UUID, SessionData]()
         # Session expires after 7 days (604800 seconds)
         self.cookie_params = frontends.CookieParameters(
-            max_age=604800, httponly=True, secure=True, samesite='lax'
+            max_age=604800, httponly=True, secure=True, samesite='strict'
         )
         self.cookie = frontends.SessionCookie(
             cookie_name='cookie',
