@@ -28,12 +28,18 @@ type WaInputElement = HTMLElement & { value: string }
 export default function Login() {
   const [error, setError] = useState<string | null>(null)
   const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [turnstileCompleted, setTurnstileCompleted] = useState(false)
   const emailRef = useRef<WaInputElement>(null)
   const passwordRef = useRef<WaInputElement>(null)
   const turnstileRef = useRef<HTMLDivElement>(null)
   const turnstileWidgetId = useRef<string | null>(null)
   const { login, isLoading } = useAuth()
   const navigate = useNavigate()
+
+  // Check if form is complete
+  const isFormComplete = email.length > 0 && password.length > 0 && turnstileCompleted
 
   // Load Turnstile site key
   useEffect(() => {
@@ -65,6 +71,7 @@ export default function Login() {
           turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
             sitekey: turnstileSiteKey,
             size: 'flexible',
+            callback: () => setTurnstileCompleted(true),
           })
         }
       }
@@ -77,6 +84,7 @@ export default function Login() {
       turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
         sitekey: turnstileSiteKey,
         size: 'flexible',
+        callback: () => setTurnstileCompleted(true),
       })
     }
 
@@ -116,6 +124,7 @@ export default function Login() {
         setError('Please complete the CAPTCHA verification')
         // Reset widget if it's in a solved-but-consumed state
         window.turnstile.reset(turnstileWidgetId.current)
+        setTurnstileCompleted(false)
       } else {
         // Widget failed to load - preserve fatal error or show system error
         if (!error) {
@@ -133,6 +142,7 @@ export default function Login() {
       // Reset Turnstile widget so user can retry
       if (window.turnstile && turnstileWidgetId.current) {
         window.turnstile.reset(turnstileWidgetId.current)
+        setTurnstileCompleted(false)
       }
     }
   }
@@ -151,6 +161,7 @@ export default function Login() {
               type="email"
               label="Email"
               required
+              onInput={(e: React.FormEvent<HTMLElement>) => setEmail((e.target as WaInputElement).value)}
             />
           </div>
 
@@ -161,6 +172,7 @@ export default function Login() {
               label="Password"
               required
               password-toggle
+              onInput={(e: React.FormEvent<HTMLElement>) => setPassword((e.target as WaInputElement).value)}
             />
           </div>
 
@@ -173,7 +185,7 @@ export default function Login() {
             type="submit"
             variant="brand"
             size="medium"
-            disabled={isLoading}
+            disabled={!isFormComplete || isLoading}
             style={{ width: '100%', marginBottom: '1rem' }}
           >
             {isLoading ? 'Logging in...' : 'Login'}
