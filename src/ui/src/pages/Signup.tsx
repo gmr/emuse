@@ -2,10 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import '@awesome.me/webawesome/dist/components/card/card.js'
-import '@awesome.me/webawesome/dist/components/input/input.js'
-import '@awesome.me/webawesome/dist/components/button/button.js'
-import '@awesome.me/webawesome/dist/components/callout/callout.js'
-import '@awesome.me/webawesome/dist/components/icon/icon.js'
 
 // Declare Turnstile types
 declare global {
@@ -55,7 +51,7 @@ async function signupUser(data: SignupRequest) {
 function detectLocale(): string {
   // Get browser language and format as locale (e.g., 'en-US' -> 'en_US')
   const lang = navigator.language || 'en-US'
-  return lang.replace('-', '_')
+  return lang.replace(/-/g, '_')
 }
 
 function detectTimezone(): string {
@@ -248,6 +244,10 @@ export default function Signup() {
 
     if (!turnstileToken) {
       setErrors(prev => ({ ...prev, turnstile: 'Please complete the CAPTCHA verification' }))
+      // Reset widget if it's in a solved-but-consumed state
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
       return
     }
 

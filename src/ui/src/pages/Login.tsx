@@ -88,6 +88,10 @@ export default function Login() {
 
     if (!turnstileToken) {
       setError('Please complete the CAPTCHA verification')
+      // Reset widget if it's in a solved-but-consumed state
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
       return
     }
 
