@@ -3,6 +3,7 @@
 !/.gitignore
 !/.junie
 !/.pre-commit-config.yaml
+!/.env.example
 build
 env
 dev-config.yaml

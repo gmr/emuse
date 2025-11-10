@@ -15,8 +15,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class _Settings(pydantic_settings.BaseSettings):
-    model_config = {'env_prefix': 'cookie', 'case_sensitive': False}
-    secret: str = pydantic.Field(min_length=32)
+    model_config = {
+        'case_sensitive': False,
+        'env_file': '.env',
+        'env_prefix': 'SESSION_',
+        'extra': 'ignore',
+    }
+
+    cookie_secret: str = pydantic.Field(min_length=32)
 
 
 class SessionData(pydantic.BaseModel):
@@ -73,7 +79,7 @@ class Session:
             cookie_name='cookie',
             identifier='general_verifier',
             auto_error=True,
-            secret_key=_settings.secret,
+            secret_key=_settings.cookie_secret,
             cookie_params=self.cookie_params,
         )
         self.verifier = _Verifier(
