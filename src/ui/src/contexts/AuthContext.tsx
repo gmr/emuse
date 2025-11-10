@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: 'include',
       })
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           return null
         }
         throw new Error('Failed to check session')

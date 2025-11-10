@@ -83,7 +83,7 @@ class Session:
         self.cookie = frontends.SessionCookie(
             cookie_name='cookie',
             identifier='general_verifier',
-            auto_error=True,
+            auto_error=False,  # Don't raise errors, let verifier handle auth
             secret_key=_settings.cookie_secret,
             cookie_params=self.cookie_params,
         )

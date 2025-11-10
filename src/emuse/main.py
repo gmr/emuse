@@ -8,7 +8,7 @@ import uvicorn
 from fastapi import staticfiles
 from fastapi.middleware import cors
 
-from emuse import __version__, common, database, endpoints, template
+from emuse import __version__, common, database, endpoints, session, template
 
 BASE_PATH = pathlib.Path(__file__).parent
 LOGGER = logging.getLogger(__name__)
@@ -38,6 +38,21 @@ def create_app() -> fastapi.FastAPI:
         allow_headers=['*'],
         expose_headers=['Content-Range'],
     )
+
+    # Add session cookie middleware to parse cookies before verifier runs
+    @app.middleware('http')
+    async def session_cookie_middleware(request: fastapi.Request, call_next):
+        """Parse session cookie and attach to request.state"""
+        session_instance = session.Session.get_instance()
+        try:
+            # Call the session cookie to parse and attach session IDs
+            session_instance.cookie(request)
+        except fastapi.HTTPException:
+            # Ignore auth errors - the verifier will handle them
+            pass
+        response = await call_next(request)
+        return response
+
     # Mount static files first so they take precedence
     app.mount(
         '/static',
