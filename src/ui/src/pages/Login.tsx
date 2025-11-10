@@ -40,16 +40,22 @@ export default function Login() {
     fetch('/api/turnstile/config')
       .then(res => res.json())
       .then(data => setTurnstileSiteKey(data.site_key))
-      .catch(err => console.error('Failed to load Turnstile config:', err))
+      .catch(err => {
+        console.error('Failed to load Turnstile config:', err)
+        setError('Failed to load security verification. Please refresh the page.')
+      })
   }, [])
 
   // Load Turnstile script and render widget
   useEffect(() => {
     if (!turnstileSiteKey || !turnstileRef.current) return
 
+    let scriptElement: HTMLScriptElement | null = null
+
     // Load Turnstile script if not already loaded
     if (!window.turnstile) {
       const script = document.createElement('script')
+      scriptElement = script
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
       script.async = true
       script.defer = true
@@ -62,6 +68,9 @@ export default function Login() {
           })
         }
       }
+      script.onerror = () => {
+        setError('Failed to load security verification. Please refresh the page.')
+      }
       document.head.appendChild(script)
     } else if (!turnstileWidgetId.current) {
       // Script already loaded, render widget immediately
@@ -69,6 +78,17 @@ export default function Login() {
         sitekey: turnstileSiteKey,
         size: 'flexible',
       })
+    }
+
+    // Cleanup function
+    return () => {
+      if (scriptElement && scriptElement.parentNode) {
+        scriptElement.parentNode.removeChild(scriptElement)
+      }
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+        turnstileWidgetId.current = null
+      }
     }
   }, [turnstileSiteKey])
 

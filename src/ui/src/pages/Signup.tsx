@@ -101,6 +101,8 @@ export default function Signup() {
   useEffect(() => {
     if (!turnstileSiteKey || !turnstileRef.current) return
 
+    let mounted = true
+
     // Load Turnstile script if not already loaded
     if (!window.turnstile) {
       const script = document.createElement('script')
@@ -109,7 +111,7 @@ export default function Signup() {
       script.defer = true
       script.onload = () => {
         // Render widget after script loads
-        if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+        if (mounted && window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
           turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
             sitekey: turnstileSiteKey,
             size: 'flexible',
@@ -117,6 +119,9 @@ export default function Signup() {
         }
       }
       document.head.appendChild(script)
+      return () => {
+        mounted = false
+      }
     } else if (!turnstileWidgetId.current) {
       // Script already loaded, render widget immediately
       turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
@@ -412,6 +417,7 @@ export default function Signup() {
                 type="date"
                 value={dateOfBirth}
                 onChange={(e) => setDateOfBirth(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
                 required
                 style={inputStyle}
               />
