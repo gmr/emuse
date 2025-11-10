@@ -1,101 +1,196 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import '@awesome.me/webawesome/dist/components/card/card.js'
 import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/callout/callout.js'
 import '@awesome.me/webawesome/dist/components/icon/icon.js'
 
-interface LoginRequest {
-  email: string
-  password: string
-}
-
-async function loginUser(credentials: LoginRequest) {
-  const response = await fetch('/api/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(credentials),
-  })
-
-  if (!response.ok) {
-    throw new Error('Login failed')
+// Declare Turnstile types
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: string | HTMLElement, options: {
+        sitekey: string
+        callback?: (token: string) => void
+        size?: 'normal' | 'compact' | 'flexible'
+      }) => string
+      getResponse: (widgetId: string) => string
+      reset: (widgetId: string) => void
+    }
   }
-
-  return response.json()
 }
+
+// Type for Web Awesome input component with value property
+type WaInputElement = HTMLElement & { value: string }
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null)
+  const emailRef = useRef<WaInputElement>(null)
+  const passwordRef = useRef<WaInputElement>(null)
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const turnstileWidgetId = useRef<string | null>(null)
+  const { login, isLoading } = useAuth()
+  const navigate = useNavigate()
 
-  const mutation = useMutation({
-    mutationFn: loginUser,
-    onSuccess: () => {
-      console.log('Login successful!')
-      // Handle successful login (e.g., redirect)
-    },
-    onError: (error) => {
-      console.error('Login failed:', error)
-    },
-  })
+  // Load Turnstile site key
+  useEffect(() => {
+    fetch('/api/turnstile/config')
+      .then(res => res.json())
+      .then(data => setTurnstileSiteKey(data.site_key))
+      .catch(err => {
+        console.error('Failed to load Turnstile config:', err)
+        setError('Failed to load security verification. Please refresh the page.')
+      })
+  }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Load Turnstile script and render widget
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileRef.current) return
+
+    let scriptElement: HTMLScriptElement | null = null
+
+    // Load Turnstile script if not already loaded
+    if (!window.turnstile) {
+      const script = document.createElement('script')
+      scriptElement = script
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        // Render widget after script loads
+        if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+          turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+            sitekey: turnstileSiteKey,
+            size: 'flexible',
+          })
+        }
+      }
+      script.onerror = () => {
+        setError('Failed to load security verification. Please refresh the page.')
+      }
+      document.head.appendChild(script)
+    } else if (!turnstileWidgetId.current) {
+      // Script already loaded, render widget immediately
+      turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: turnstileSiteKey,
+        size: 'flexible',
+      })
+    }
+
+    // Cleanup function
+    return () => {
+      if (scriptElement && scriptElement.parentNode) {
+        scriptElement.parentNode.removeChild(scriptElement)
+      }
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+        turnstileWidgetId.current = null
+      }
+    }
+  }, [turnstileSiteKey])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    mutation.mutate({ email, password })
+
+    // Only clear errors if Turnstile widget successfully loaded
+    if (window.turnstile && turnstileWidgetId.current) {
+      setError(null)
+    }
+
+    // Read values directly from the Web Component elements
+    const email = emailRef.current?.value || ''
+    const password = passwordRef.current?.value || ''
+
+    // Get Turnstile token
+    let turnstileToken = ''
+    if (window.turnstile && turnstileWidgetId.current) {
+      turnstileToken = window.turnstile.getResponse(turnstileWidgetId.current)
+    }
+
+    if (!turnstileToken) {
+      // If widget exists, show CAPTCHA completion message
+      if (window.turnstile && turnstileWidgetId.current) {
+        setError('Please complete the CAPTCHA verification')
+        // Reset widget if it's in a solved-but-consumed state
+        window.turnstile.reset(turnstileWidgetId.current)
+      } else {
+        // Widget failed to load - preserve fatal error or show system error
+        if (!error) {
+          setError('Security verification unavailable. Please refresh the page.')
+        }
+      }
+      return
+    }
+
+    try {
+      await login(email, password, turnstileToken)
+      navigate('/')
+    } catch {
+      setError('Login failed. Please check your credentials and try again.')
+      // Reset Turnstile widget so user can retry
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
+    }
   }
 
   return (
     <div style={{ maxWidth: '400px', margin: '2rem auto', padding: '1rem' }}>
       <wa-card>
         <div slot="header">
-          <h1 style={{ margin: 0 }}>Login to eMuse</h1>
+          <h1 style={{ margin: 0 }}>Login</h1>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <wa-input
+              ref={emailRef}
               type="email"
               label="Email"
-              value={email}
-              onWaInput={(e: CustomEvent) => setEmail((e.target as HTMLInputElement).value)}
               required
             />
           </div>
 
           <div style={{ marginBottom: '1rem' }}>
             <wa-input
+              ref={passwordRef}
               type="password"
               label="Password"
-              value={password}
-              onWaInput={(e: CustomEvent) => setPassword((e.target as HTMLInputElement).value)}
               required
               password-toggle
             />
+          </div>
+
+          {/* Turnstile CAPTCHA Widget */}
+          <div style={{ marginBottom: '1rem' }}>
+            <div ref={turnstileRef}></div>
           </div>
 
           <wa-button
             type="submit"
             variant="brand"
             size="medium"
-            disabled={mutation.isPending}
+            disabled={isLoading}
             style={{ width: '100%', marginBottom: '1rem' }}
           >
-            {mutation.isPending ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Logging in...' : 'Login'}
           </wa-button>
 
-          {mutation.isError && (
+          {error && (
             <wa-callout variant="danger" open>
               <wa-icon slot="icon" name="exclamation-triangle" />
-              Login failed. Please check your credentials and try again.
+              {error}
             </wa-callout>
           )}
         </form>
 
         <div slot="footer" style={{ textAlign: 'center' }}>
+          <p>
+            Don't have an account? <Link to="/signup">Sign up</Link>
+          </p>
           <Link to="/">Back to Home</Link>
         </div>
       </wa-card>

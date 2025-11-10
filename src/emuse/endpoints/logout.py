@@ -8,7 +8,7 @@ from emuse import session
 router = fastapi.APIRouter()
 
 
-@router.get('/logout', dependencies=[fastapi.Depends(session.cookie())])
+@router.get('/api/logout', dependencies=[fastapi.Depends(session.cookie())])
 async def logout(
     response: responses.Response,
     session_id: uuid.UUID = fastapi.Depends(session.cookie()),

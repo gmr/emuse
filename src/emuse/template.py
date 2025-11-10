@@ -19,6 +19,7 @@ def initialize() -> None:
         auto_reload=settings.debug,
         extensions=['jinja2.ext.i18n', 'jinja2_time.TimeExtension'],
         undefined=jinja2.StrictUndefined,
+        enable_async=True,
     )
 
 
@@ -32,3 +33,15 @@ def render(template: str, **kwargs) -> str:
     """
     template = _environment.get_template(template)
     return template.render(**kwargs)
+
+
+async def render_async(template: str, **kwargs) -> str:
+    """Render a template asynchronously
+
+    Args:
+        template: Name of the template file
+        **kwargs: Variables to pass to the template during rendering
+
+    """
+    template = _environment.get_template(template)
+    return await template.render_async(**kwargs)

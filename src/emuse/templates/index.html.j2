@@ -1,8 +1,31 @@
-<html>
-    <head>
-        <title>eMuse:: {{ title }}</title>
-    </head>
-    <body>
-
-    </body>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>eMuse :: {{ title }}</title>
+    <link rel="icon" type="image/ico" href="/static/favicon.ico"/>
+    {% if debug %}
+    {# Development mode: Load from Vite dev server #}
+    <script type="module">
+      import RefreshRuntime from '{{ vite_dev_url }}/@react-refresh'
+      RefreshRuntime.injectIntoGlobalHook(window)
+      window.$RefreshReg$ = () => {}
+      window.$RefreshSig$ = () => (type) => type
+      window.__vite_plugin_react_preamble_installed__ = true
+    </script>
+    {% endif %}
+  </head>
+  <body>
+    <div id="root"></div>
+    {% if debug %}
+    {# Development mode: Load from Vite dev server #}
+    <script type="module" src="{{ vite_dev_url }}/@vite/client"></script>
+    <script type="module" src="{{ vite_dev_url }}/src/main.tsx"></script>
+    {% else %}
+    {# Production mode: Load built assets #}
+    <script type="module" src="/static/assets/index.js"></script>
+    <link rel="stylesheet" href="/static/assets/index.css" />
+    {% endif %}
+  </body>
 </html>

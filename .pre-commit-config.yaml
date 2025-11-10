@@ -18,3 +18,20 @@ repos:
       - id: ruff-format
       - id: ruff-check
         args: [--fix]
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.39.1
+    hooks:
+      - id: eslint
+        files: \.[jt]sx?$  # *.js, *.jsx, *.ts and *.tsx
+        types: [file]
+        additional_dependencies:
+          - eslint-plugin-react-hooks
+          - eslint-plugin-react-refresh
+          - typescript-eslint
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [--external-sources]

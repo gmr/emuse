@@ -1,0 +1,488 @@
+import { useState, useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import '@awesome.me/webawesome/dist/components/card/card.js'
+
+// Declare Turnstile types
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: string | HTMLElement, options: {
+        sitekey: string
+        callback?: (token: string) => void
+        size?: 'normal' | 'compact' | 'flexible'
+      }) => string
+      getResponse: (widgetId: string) => string
+      reset: (widgetId: string) => void
+    }
+  }
+}
+
+interface SignupRequest {
+  email: string
+  password: string
+  first_name: string
+  surname: string
+  display_name: string
+  date_of_birth: string
+  locale: string
+  timezone: string
+  turnstile_token: string
+}
+
+async function signupUser(data: SignupRequest) {
+  const response = await fetch('/api/signup', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Signup failed' }))
+    throw new Error(error.detail || 'Signup failed')
+  }
+
+  return response.json()
+}
+
+function detectLocale(): string {
+  // Get browser language and format as locale (e.g., 'en-US' -> 'en_US')
+  const lang = navigator.language || 'en-US'
+  return lang.replace(/-/g, '_')
+}
+
+function detectTimezone(): string {
+  // Get browser timezone using Intl API
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone
+  } catch {
+    return 'UTC'
+  }
+}
+
+export default function Signup() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [surname, setSurname] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [locale, setLocale] = useState('')
+  const [timezone, setTimezone] = useState('')
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null)
+  const [errors, setErrors] = useState<{
+    email?: string
+    password?: string
+    confirmPassword?: string
+    firstName?: string
+    surname?: string
+    displayName?: string
+    dateOfBirth?: string
+    turnstile?: string
+  }>({})
+
+  const navigate = useNavigate()
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const turnstileWidgetId = useRef<string | null>(null)
+
+  // Load Turnstile site key
+  useEffect(() => {
+    fetch('/api/turnstile/config')
+      .then(res => res.json())
+      .then(data => setTurnstileSiteKey(data.site_key))
+      .catch(err => console.error('Failed to load Turnstile config:', err))
+  }, [])
+
+  // Load Turnstile script and render widget
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileRef.current) return
+
+    let mounted = true
+
+    // Load Turnstile script if not already loaded
+    if (!window.turnstile) {
+      const script = document.createElement('script')
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        // Render widget after script loads
+        if (mounted && window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+          turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+            sitekey: turnstileSiteKey,
+            size: 'flexible',
+          })
+        }
+      }
+      document.head.appendChild(script)
+      return () => {
+        mounted = false
+      }
+    } else if (!turnstileWidgetId.current) {
+      // Script already loaded, render widget immediately
+      turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: turnstileSiteKey,
+        size: 'flexible',
+      })
+    }
+  }, [turnstileSiteKey])
+
+  // Auto-detect locale and timezone on mount
+  useEffect(() => {
+    setLocale(detectLocale())
+    setTimezone(detectTimezone())
+  }, [])
+
+  // Auto-generate display name from first and surname
+  useEffect(() => {
+    if (firstName && surname && !displayName) {
+      setDisplayName(`${firstName} ${surname}`)
+    }
+  }, [firstName, surname, displayName])
+
+  // Clear password errors when user types
+  useEffect(() => {
+    if (password || confirmPassword) {
+      setErrors(prev => ({
+        ...prev,
+        password: undefined,
+        confirmPassword: undefined
+      }))
+    }
+  }, [password, confirmPassword])
+
+  const mutation = useMutation({
+    mutationFn: signupUser,
+    onSuccess: () => {
+      navigate('/signup/success')
+    },
+    onError: () => {
+      // Reset Turnstile widget so user can retry
+      if (window.turnstile && turnstileWidgetId.current) {
+        window.turnstile.reset(turnstileWidgetId.current)
+      }
+    },
+  })
+
+  const validateEmail = (email: string): string | undefined => {
+    if (!email) return 'Email is required'
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) return 'Please enter a valid email address'
+    return undefined
+  }
+
+  const validatePassword = (password: string): string | undefined => {
+    if (!password) return 'Password is required'
+    if (password.length < 12) return 'Password must be at least 12 characters'
+    if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter'
+    if (!/[a-z]/.test(password)) return 'Password must contain at least one lowercase letter'
+    if (!/[0-9]/.test(password)) return 'Password must contain at least one number'
+    if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain at least one special character'
+    return undefined
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: typeof errors = {}
+
+    // Email validation
+    const emailError = validateEmail(email)
+    if (emailError) newErrors.email = emailError
+
+    // Password validation
+    const passwordError = validatePassword(password)
+    if (passwordError) newErrors.password = passwordError
+
+    // Confirm password validation
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password'
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match'
+    }
+
+    // Name validations
+    if (!firstName.trim()) newErrors.firstName = 'First name is required'
+    if (!surname.trim()) newErrors.surname = 'Surname is required'
+    if (!displayName.trim()) newErrors.displayName = 'Display name is required'
+
+    // Date of birth validation
+    if (!dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required'
+    } else {
+      const birthDate = new Date(dateOfBirth)
+      const today = new Date()
+
+      // Calculate age accounting for whether birthday has occurred this year
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      const dayDiff = today.getDate() - birthDate.getDate()
+
+      // If birthday hasn't occurred yet this year, subtract 1 from age
+      if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+        age--
+      }
+
+      if (age < 13) {
+        newErrors.dateOfBirth = 'You must be at least 13 years old to sign up'
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!validateForm()) {
+      return
+    }
+
+    // Get Turnstile token
+    let turnstileToken = ''
+    if (window.turnstile && turnstileWidgetId.current) {
+      turnstileToken = window.turnstile.getResponse(turnstileWidgetId.current)
+    }
+
+    if (!turnstileToken) {
+      // If widget exists, show CAPTCHA completion message
+      if (window.turnstile && turnstileWidgetId.current) {
+        setErrors(prev => ({ ...prev, turnstile: 'Please complete the CAPTCHA verification' }))
+        // Reset widget if it's in a solved-but-consumed state
+        window.turnstile.reset(turnstileWidgetId.current)
+      } else {
+        // Widget failed to load - show system error
+        setErrors(prev => ({ ...prev, turnstile: 'Security verification unavailable. Please refresh the page.' }))
+      }
+      return
+    }
+
+    mutation.mutate({
+      email,
+      password,
+      first_name: firstName,
+      surname,
+      display_name: displayName,
+      date_of_birth: dateOfBirth,
+      locale,
+      timezone,
+      turnstile_token: turnstileToken,
+    })
+  }
+
+  const inputStyle = {
+    width: '100%',
+    padding: '0.75rem',
+    fontSize: '1rem',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+    boxSizing: 'border-box' as const,
+  }
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: '0.5rem',
+    fontWeight: '500',
+    color: '#333',
+  }
+
+  const helpTextStyle = {
+    fontSize: '0.875rem',
+    color: '#666',
+    marginTop: '0.25rem',
+  }
+
+  return (
+    <div style={{ maxWidth: '600px', margin: '2rem auto', padding: '1rem' }}>
+      <wa-card>
+        <div slot="header">
+          <h1 style={{ margin: 0 }}>Sign Up</h1>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '0 1rem' }}>
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
+              Email*
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </label>
+            {errors.email && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.email}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
+              Password*
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </label>
+            <div style={helpTextStyle}>Minimum 12 characters with uppercase, lowercase, number, and special character</div>
+            {errors.password && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.password}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
+              Confirm Password*
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </label>
+            {errors.confirmPassword && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.confirmPassword}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={labelStyle}>
+                First Name*
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </label>
+              {errors.firstName && (
+                <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {errors.firstName}
+                </div>
+              )}
+            </div>
+            <div>
+              <label style={labelStyle}>
+                Surname*
+                <input
+                  type="text"
+                  value={surname}
+                  onChange={(e) => setSurname(e.target.value)}
+                  required
+                  style={inputStyle}
+                />
+              </label>
+              {errors.surname && (
+                <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                  {errors.surname}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
+              Display Name*
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+                style={inputStyle}
+              />
+            </label>
+            <div style={helpTextStyle}>This is how your name will appear to others</div>
+            {errors.displayName && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.displayName}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={labelStyle}>
+              Date of Birth*
+              <input
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                required
+                style={inputStyle}
+              />
+            </label>
+            {errors.dateOfBirth && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.dateOfBirth}
+              </div>
+            )}
+          </div>
+
+          {/* Turnstile CAPTCHA Widget */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div ref={turnstileRef}></div>
+            {errors.turnstile && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.turnstile}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              fontSize: '1rem',
+              fontWeight: '600',
+              color: 'white',
+              backgroundColor: '#800020',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: mutation.isPending ? 'not-allowed' : 'pointer',
+              opacity: mutation.isPending ? 0.6 : 1,
+              marginBottom: '1rem',
+            }}
+          >
+            {mutation.isPending ? 'Creating Account...' : 'Sign Up'}
+          </button>
+
+          {mutation.isError && (
+            <div style={{
+              padding: '1rem',
+              backgroundColor: '#fee',
+              border: '1px solid #fcc',
+              borderRadius: '4px',
+              color: '#c33',
+            }}>
+              {mutation.error instanceof Error ? mutation.error.message : 'Signup failed. Please try again.'}
+            </div>
+          )}
+        </form>
+
+        <div slot="footer" style={{ textAlign: 'center' }}>
+          <p>
+            Already have an account? <Link to="/login">Log in</Link>
+          </p>
+          <Link to="/">Back to Home</Link>
+        </div>
+      </wa-card>
+    </div>
+  )
+}

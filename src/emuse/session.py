@@ -15,8 +15,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class _Settings(pydantic_settings.BaseSettings):
-    model_config = {'env_prefix': 'cookie', 'case_sensitive': False}
-    secret: str = 'secret'  # noqa: S105
+    model_config = {
+        'case_sensitive': False,
+        'env_file': '.env',
+        'env_prefix': 'SESSION_',
+        'extra': 'ignore',
+    }
+
+    cookie_secret: str = pydantic.Field(min_length=32)
 
 
 class SessionData(pydantic.BaseModel):
@@ -65,12 +71,15 @@ class Session:
     def __init__(self):
         _settings = _Settings()
         self.backend = backends.InMemoryBackend[uuid.UUID, SessionData]()
-        self.cookie_params = frontends.CookieParameters()
+        # Session expires after 7 days (604800 seconds)
+        self.cookie_params = frontends.CookieParameters(
+            max_age=604800, httponly=True, secure=True, samesite='strict'
+        )
         self.cookie = frontends.SessionCookie(
             cookie_name='cookie',
             identifier='general_verifier',
             auto_error=True,
-            secret_key=_settings.secret,
+            secret_key=_settings.cookie_secret,
             cookie_params=self.cookie_params,
         )
         self.verifier = _Verifier(
