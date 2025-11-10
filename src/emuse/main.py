@@ -38,14 +38,20 @@ def create_app() -> fastapi.FastAPI:
         allow_headers=['*'],
         expose_headers=['Content-Range'],
     )
-    app.include_router(endpoints.index_router)
-    app.include_router(endpoints.login_router)
-    app.include_router(endpoints.logout_router)
+    # Mount static files first so they take precedence
     app.mount(
         '/static',
         staticfiles.StaticFiles(directory=BASE_PATH / 'static'),
         name='static',
     )
+    # Register API routes
+    app.include_router(endpoints.login_router)
+    app.include_router(endpoints.logout_router)
+    app.include_router(endpoints.me_router)
+    app.include_router(endpoints.signup_router)
+    app.include_router(endpoints.verify_email_router)
+    # Register index router last (contains catch-all for SPA routing)
+    app.include_router(endpoints.index_router)
     return app
 
 
