@@ -9,8 +9,8 @@ import '@awesome.me/webawesome/dist/components/icon/icon.js'
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null)
-  const emailRef = useRef<any>(null)
-  const passwordRef = useRef<any>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
   const { login, isLoading } = useAuth()
   const navigate = useNavigate()
 

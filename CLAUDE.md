@@ -166,7 +166,7 @@ The main app structure is in `src/ui/src/App.tsx`, which sets up the application
 ## Browser Testing
 
 ### Playwright MCP Integration
-Use the Playwright MCP tools to interact with the development site at **https://dev.emuse.org** for:
+Use the Playwright MCP tools to interact with the development site at **[https://dev.emuse.org](https://dev.emuse.org)** for:
 - Testing UI flows (signup, login, logout, etc.)
 - Verifying frontend-backend integration
 - Taking screenshots for documentation or debugging

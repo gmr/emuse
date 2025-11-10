@@ -1,6 +1,6 @@
 import fastapi
 
-from emuse import common, database, models, template
+from emuse import common, database, template
 
 router = fastapi.APIRouter()
 
@@ -8,7 +8,7 @@ router = fastapi.APIRouter()
 async def _render_index(postgres: database.InjectConnection) -> str:
     """Render the index HTML template."""
     settings = common.Settings()
-    async with database.cursor(postgres, models.Account) as cursor:
+    async with database.cursor(postgres) as cursor:
         await cursor.execute('SELECT * FROM v1.accounts')
         accounts = await cursor.fetchall()
         return template.render(
