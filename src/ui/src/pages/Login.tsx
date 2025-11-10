@@ -94,7 +94,11 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null)
+
+    // Only clear errors if Turnstile widget successfully loaded
+    if (window.turnstile && turnstileWidgetId.current) {
+      setError(null)
+    }
 
     // Read values directly from the Web Component elements
     const email = emailRef.current?.value || ''
@@ -107,10 +111,16 @@ export default function Login() {
     }
 
     if (!turnstileToken) {
-      setError('Please complete the CAPTCHA verification')
-      // Reset widget if it's in a solved-but-consumed state
+      // If widget exists, show CAPTCHA completion message
       if (window.turnstile && turnstileWidgetId.current) {
+        setError('Please complete the CAPTCHA verification')
+        // Reset widget if it's in a solved-but-consumed state
         window.turnstile.reset(turnstileWidgetId.current)
+      } else {
+        // Widget failed to load - preserve fatal error or show system error
+        if (!error) {
+          setError('Security verification unavailable. Please refresh the page.')
+        }
       }
       return
     }

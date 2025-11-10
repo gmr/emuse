@@ -248,10 +248,14 @@ export default function Signup() {
     }
 
     if (!turnstileToken) {
-      setErrors(prev => ({ ...prev, turnstile: 'Please complete the CAPTCHA verification' }))
-      // Reset widget if it's in a solved-but-consumed state
+      // If widget exists, show CAPTCHA completion message
       if (window.turnstile && turnstileWidgetId.current) {
+        setErrors(prev => ({ ...prev, turnstile: 'Please complete the CAPTCHA verification' }))
+        // Reset widget if it's in a solved-but-consumed state
         window.turnstile.reset(turnstileWidgetId.current)
+      } else {
+        // Widget failed to load - show system error
+        setErrors(prev => ({ ...prev, turnstile: 'Security verification unavailable. Please refresh the page.' }))
       }
       return
     }
