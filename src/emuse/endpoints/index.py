@@ -11,7 +11,7 @@ async def _render_index(postgres: database.InjectConnection) -> str:
     async with database.cursor(postgres) as cursor:
         await cursor.execute('SELECT * FROM v1.accounts')
         accounts = await cursor.fetchall()
-        return template.render(
+        return await template.render_async(
             'index.html.j2',
             title='Home',
             accounts=accounts,

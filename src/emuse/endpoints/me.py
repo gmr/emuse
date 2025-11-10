@@ -10,7 +10,7 @@ router = fastapi.APIRouter()
 async def me(
     postgres: database.InjectConnection,
     session_data: session.SessionData = fastapi.Depends(
-        lambda: session.Session.get_instance().verifier
+        session.Session.get_instance().verifier
     ),
 ) -> PublicAccount:
     """Get current authenticated user account information."""
