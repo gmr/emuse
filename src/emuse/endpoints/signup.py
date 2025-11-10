@@ -2,6 +2,7 @@ import datetime
 import re
 
 import fastapi
+import psycopg.errors
 import pydantic
 from pydantic_extra_types import timezone_name
 
@@ -101,7 +102,14 @@ async def signup(
     account.set_password(request.password.get_secret_value())
 
     # Save account to database
-    await account.save(postgres)
+    try:
+        await account.save(postgres)
+    except psycopg.errors.UniqueViolation:
+        # Handle race condition where email was registered between
+        # check and save
+        raise fastapi.HTTPException(
+            status_code=400, detail='Email already registered'
+        ) from None
 
     # Send verification email
     await email.send_verification_email(
