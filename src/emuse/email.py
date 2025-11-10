@@ -142,10 +142,10 @@ async def verify_token(
         await cursor.execute(
             """
             UPDATE v1.email_verification_tokens
-               SET used_at = CURRENT_TIMESTAMP
+               SET used_at = %(used_at)s
              WHERE token = %(token)s
             """,
-            {'token': token},
+            {'token': token, 'used_at': common.current_timestamp()},
         )
 
         return data['account_id']
