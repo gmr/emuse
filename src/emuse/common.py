@@ -21,6 +21,7 @@ class Settings(pydantic_settings.BaseSettings):
     environment: str = 'development'
     cors_origin: str = '*'
     sentry_dsn: str | None = None
+    vite_dev_url: str = 'http://localhost:5173'
 
 
 class StatusEndpointFilter(logging.Filter):

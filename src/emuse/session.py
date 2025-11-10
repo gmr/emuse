@@ -65,7 +65,8 @@ class Session:
     def __init__(self):
         _settings = _Settings()
         self.backend = backends.InMemoryBackend[uuid.UUID, SessionData]()
-        self.cookie_params = frontends.CookieParameters()
+        # Session expires after 7 days (604800 seconds)
+        self.cookie_params = frontends.CookieParameters(max_age=604800)
         self.cookie = frontends.SessionCookie(
             cookie_name='cookie',
             identifier='general_verifier',
