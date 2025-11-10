@@ -44,3 +44,15 @@ CREATE TABLE IF NOT EXISTS v1.poetry (
     notes          TEXT,
     tags           TEXT[]
 );
+
+CREATE TABLE v1.email_verification_tokens (
+    id          UUID  PRIMARY KEY  DEFAULT uuidv7(),
+    account_id  UUID  NOT NULL  REFERENCES v1.accounts (id) ON DELETE CASCADE ON UPDATE CASCADE,
+    token       TEXT  NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE  NOT NULL  DEFAULT CURRENT_TIMESTAMP,
+    expires_at  TIMESTAMP WITH TIME ZONE  NOT NULL,
+    used_at     TIMESTAMP WITH TIME ZONE
+);
+
+CREATE UNIQUE INDEX ON v1.email_verification_tokens (token);
+CREATE INDEX ON v1.email_verification_tokens (account_id);
