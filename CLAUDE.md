@@ -163,6 +163,26 @@ Key directories:
 
 The main app structure is in `src/ui/src/App.tsx`, which sets up the application routes and layout.
 
+## Browser Testing
+
+### Playwright MCP Integration
+Use the Playwright MCP tools to interact with the development site at **https://dev.emuse.org** for:
+- Testing UI flows (signup, login, logout, etc.)
+- Verifying frontend-backend integration
+- Taking screenshots for documentation or debugging
+- Validating accessibility and page structure
+
+Available Playwright tools include:
+- `mcp__playwright__browser_navigate`: Navigate to URLs
+- `mcp__playwright__browser_snapshot`: Capture accessibility snapshot
+- `mcp__playwright__browser_click`: Click elements
+- `mcp__playwright__browser_type`: Type text into fields
+- `mcp__playwright__browser_fill_form`: Fill multiple form fields
+- `mcp__playwright__browser_take_screenshot`: Take screenshots
+- And many more for comprehensive browser automation
+
+The development site should be used for testing changes and validating functionality before deployment.
+
 ## Database Schema
 
 Schema is defined in `postgres/emuse.sql`:
