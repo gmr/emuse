@@ -70,10 +70,15 @@ class Session:
 
     def __init__(self):
         _settings = _Settings()
+        app_settings = common.Settings()
         self.backend = backends.InMemoryBackend[uuid.UUID, SessionData]()
         # Session expires after 7 days (604800 seconds)
+        # In debug mode, relax cookie security for local development
         self.cookie_params = frontends.CookieParameters(
-            max_age=604800, httponly=True, secure=True, samesite='strict'
+            max_age=604800,
+            httponly=True,
+            secure=not app_settings.debug,  # Allow HTTP in debug mode
+            samesite='lax' if app_settings.debug else 'strict',
         )
         self.cookie = frontends.SessionCookie(
             cookie_name='cookie',
