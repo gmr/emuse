@@ -4,6 +4,7 @@ import hashlib
 import logging
 import os
 import re
+import secrets
 import typing
 import uuid
 
@@ -55,16 +56,21 @@ class Account(pydantic.BaseModel):
         async with database.cursor(postgres) as cursor:
             await cursor.execute(_AUTHENTICATE_SQL, {'email': str(email)})
             if not cursor.rowcount:
+                # Perform dummy hash to maintain consistent timing
+                dummy_salt = os.urandom(16)
+                cls._hash_password(password, dummy_salt)
                 return None
             data = await cursor.fetchone()
             value = cls._hash_password(password, data['salt'])
-            if value == data['password']:
+            # Use constant-time comparison to prevent timing attacks
+            if secrets.compare_digest(value, data['password']):
                 # Fetch full account and update last_login_at
                 account = await cls.get(postgres, data['id'])
                 if account:
                     account.last_login_at = common.current_timestamp()
                     await account.save(postgres)
                 return account
+            return None
 
     @classmethod
     async def get(

@@ -44,6 +44,24 @@ async def login(
         postgres, credentials.email, credentials.password.get_secret_value()
     )
     if isinstance(result, models.Account):
+        # Validate account status
+        if not result.activated:
+            raise fastapi.HTTPException(
+                status_code=403,
+                detail='Please verify your email address before logging in',
+            )
+        if result.locked:
+            raise fastapi.HTTPException(
+                status_code=403,
+                detail='This account has been locked. Please contact support.',
+            )
+        if result.memorial:
+            raise fastapi.HTTPException(
+                status_code=403,
+                detail='This is a memorial account and cannot be accessed',
+            )
         await session.create(response, result.id)
         return PublicAccount(**result.model_dump(exclude={'password', 'salt'}))
-    raise fastapi.HTTPException(status_code=403, detail='Forbidden')
+    raise fastapi.HTTPException(
+        status_code=403, detail='Invalid email or password'
+    )

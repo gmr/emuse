@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import fastapi
 import pydantic
@@ -20,6 +21,45 @@ class SignupRequest(pydantic.BaseModel):
         default='en_US', pattern=r'^[a-z]{2}_[A-Z]{2}$'
     )
     timezone: timezone_name.TimeZoneName = 'UTC'
+
+    @pydantic.field_validator('password')
+    @classmethod
+    def validate_password_strength(
+        cls, v: pydantic.SecretStr
+    ) -> pydantic.SecretStr:
+        """Validate password meets complexity requirements."""
+        password = v.get_secret_value()
+        if len(password) < 12:
+            raise ValueError('Password must be at least 12 characters')
+        if not re.search(r'[A-Z]', password):
+            raise ValueError(
+                'Password must contain at least one uppercase letter'
+            )
+        if not re.search(r'[a-z]', password):
+            raise ValueError(
+                'Password must contain at least one lowercase letter'
+            )
+        if not re.search(r'[0-9]', password):
+            raise ValueError('Password must contain at least one number')
+        if not re.search(r'[^A-Za-z0-9]', password):
+            raise ValueError(
+                'Password must contain at least one special character'
+            )
+        return v
+
+    @pydantic.field_validator('date_of_birth')
+    @classmethod
+    def validate_age(cls, v: datetime.date) -> datetime.date:
+        """Validate user is at least 13 years old."""
+        today = datetime.datetime.now(datetime.UTC).date()
+        age = (
+            today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+        )
+        if age < 13:
+            raise ValueError('You must be at least 13 years old to register')
+        if v > today:
+            raise ValueError('Date of birth cannot be in the future')
+        return v
 
 
 class SignupResponse(pydantic.BaseModel):
