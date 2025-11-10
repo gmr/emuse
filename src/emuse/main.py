@@ -49,6 +49,7 @@ def create_app() -> fastapi.FastAPI:
     app.include_router(endpoints.logout_router)
     app.include_router(endpoints.me_router)
     app.include_router(endpoints.signup_router)
+    app.include_router(endpoints.turnstile_router)
     app.include_router(endpoints.verify_email_router)
     # Register index router last (contains catch-all for SPA routing)
     app.include_router(endpoints.index_router)

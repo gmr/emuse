@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import '@awesome.me/webawesome/dist/components/card/card.js'
@@ -6,6 +6,20 @@ import '@awesome.me/webawesome/dist/components/input/input.js'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/callout/callout.js'
 import '@awesome.me/webawesome/dist/components/icon/icon.js'
+
+// Declare Turnstile types
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: string | HTMLElement, options: {
+        sitekey: string
+        callback?: (token: string) => void
+      }) => string
+      getResponse: (widgetId: string) => string
+      reset: (widgetId: string) => void
+    }
+  }
+}
 
 interface SignupRequest {
   email: string
@@ -16,6 +30,7 @@ interface SignupRequest {
   date_of_birth: string
   locale: string
   timezone: string
+  turnstile_token: string
 }
 
 async function signupUser(data: SignupRequest) {
@@ -61,6 +76,7 @@ export default function Signup() {
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [locale, setLocale] = useState('')
   const [timezone, setTimezone] = useState('')
+  const [turnstileSiteKey, setTurnstileSiteKey] = useState<string | null>(null)
   const [errors, setErrors] = useState<{
     email?: string
     password?: string
@@ -69,9 +85,47 @@ export default function Signup() {
     surname?: string
     displayName?: string
     dateOfBirth?: string
+    turnstile?: string
   }>({})
 
   const navigate = useNavigate()
+  const turnstileRef = useRef<HTMLDivElement>(null)
+  const turnstileWidgetId = useRef<string | null>(null)
+
+  // Load Turnstile site key
+  useEffect(() => {
+    fetch('/api/turnstile/config')
+      .then(res => res.json())
+      .then(data => setTurnstileSiteKey(data.site_key))
+      .catch(err => console.error('Failed to load Turnstile config:', err))
+  }, [])
+
+  // Load Turnstile script and render widget
+  useEffect(() => {
+    if (!turnstileSiteKey || !turnstileRef.current) return
+
+    // Load Turnstile script if not already loaded
+    if (!window.turnstile) {
+      const script = document.createElement('script')
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+      script.async = true
+      script.defer = true
+      script.onload = () => {
+        // Render widget after script loads
+        if (window.turnstile && turnstileRef.current && !turnstileWidgetId.current) {
+          turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+            sitekey: turnstileSiteKey,
+          })
+        }
+      }
+      document.head.appendChild(script)
+    } else if (!turnstileWidgetId.current) {
+      // Script already loaded, render widget immediately
+      turnstileWidgetId.current = window.turnstile.render(turnstileRef.current, {
+        sitekey: turnstileSiteKey,
+      })
+    }
+  }, [turnstileSiteKey])
 
   // Auto-detect locale and timezone on mount
   useEffect(() => {
@@ -173,6 +227,17 @@ export default function Signup() {
       return
     }
 
+    // Get Turnstile token
+    let turnstileToken = ''
+    if (window.turnstile && turnstileWidgetId.current) {
+      turnstileToken = window.turnstile.getResponse(turnstileWidgetId.current)
+    }
+
+    if (!turnstileToken) {
+      setErrors(prev => ({ ...prev, turnstile: 'Please complete the CAPTCHA verification' }))
+      return
+    }
+
     mutation.mutate({
       email,
       password,
@@ -182,6 +247,7 @@ export default function Signup() {
       date_of_birth: dateOfBirth,
       locale,
       timezone,
+      turnstile_token: turnstileToken,
     })
   }
 
@@ -340,6 +406,16 @@ export default function Signup() {
             {errors.dateOfBirth && (
               <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
                 {errors.dateOfBirth}
+              </div>
+            )}
+          </div>
+
+          {/* Turnstile CAPTCHA Widget */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div ref={turnstileRef}></div>
+            {errors.turnstile && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+                {errors.turnstile}
               </div>
             )}
           </div>

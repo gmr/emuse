@@ -6,7 +6,7 @@ import psycopg.errors
 import pydantic
 from pydantic_extra_types import timezone_name
 
-from emuse import database, email, models
+from emuse import database, email, models, turnstile
 
 router = fastapi.APIRouter()
 
@@ -22,6 +22,9 @@ class SignupRequest(pydantic.BaseModel):
         default='en_US', pattern=r'^[a-z]{2}_[A-Z]{2}$'
     )
     timezone: timezone_name.TimeZoneName = 'UTC'
+    turnstile_token: str = pydantic.Field(
+        min_length=1, description='CloudFlare Turnstile verification token'
+    )
 
     @pydantic.field_validator('password')
     @classmethod
@@ -70,9 +73,19 @@ class SignupResponse(pydantic.BaseModel):
 
 @router.post('/api/signup')
 async def signup(
-    request: SignupRequest, postgres: database.InjectConnection
+    request: SignupRequest,
+    postgres: database.InjectConnection,
+    fastapi_request: fastapi.Request,
 ) -> SignupResponse:
     """Register a new user account and send verification email."""
+
+    # Verify Turnstile token
+    client_ip = fastapi_request.client.host if fastapi_request.client else None
+    if not await turnstile.verify_token(request.turnstile_token, client_ip):
+        raise fastapi.HTTPException(
+            status_code=400,
+            detail='CAPTCHA verification failed. Please try again.',
+        )
 
     # Check if email already exists
     async with database.cursor(postgres) as cursor:
