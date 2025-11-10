@@ -146,7 +146,17 @@ export default function Signup() {
     } else {
       const birthDate = new Date(dateOfBirth)
       const today = new Date()
-      const age = today.getFullYear() - birthDate.getFullYear()
+
+      // Calculate age accounting for whether birthday has occurred this year
+      let age = today.getFullYear() - birthDate.getFullYear()
+      const monthDiff = today.getMonth() - birthDate.getMonth()
+      const dayDiff = today.getDate() - birthDate.getDate()
+
+      // If birthday hasn't occurred yet this year, subtract 1 from age
+      if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+        age--
+      }
+
       if (age < 13) {
         newErrors.dateOfBirth = 'You must be at least 13 years old to sign up'
       }

@@ -7,10 +7,13 @@ import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/callout/callout.js'
 import '@awesome.me/webawesome/dist/components/icon/icon.js'
 
+// Type for Web Awesome input component with value property
+type WaInputElement = HTMLElement & { value: string }
+
 export default function Login() {
   const [error, setError] = useState<string | null>(null)
-  const emailRef = useRef<HTMLInputElement>(null)
-  const passwordRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<WaInputElement>(null)
+  const passwordRef = useRef<WaInputElement>(null)
   const { login, isLoading } = useAuth()
   const navigate = useNavigate()
 
@@ -25,7 +28,7 @@ export default function Login() {
     try {
       await login(email, password)
       navigate('/')
-    } catch (err) {
+    } catch {
       setError('Login failed. Please check your credentials and try again.')
     }
   }
